@@ -1,0 +1,388 @@
+/* App Controller — HU-01 & HU-02: Disponibilidad y Reserva de Espacios */
+
+/* ─── Constantes de UI ─── */
+const DIAS_ES   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES_ES  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const TOOLTIP   = { ocupado: 'Reservado', pendiente: 'Pendiente de confirmación' };
+const ETIQUETA  = { disponible: 'Disponible', ocupado: 'Ocupado', pendiente: 'Pendiente' };
+
+/* ─── Estado global ─── */
+const AppState = {
+  espacios: [],
+  reservas: [],
+  filtros: { espacioSeleccionado: '', fechaSeleccionada: '' },
+  ui: {
+    cargando: false,
+    ultimaActualizacion: null,
+    modalReserva: { abierto: false, bloqueSeleccionado: null },
+    modalGestion: { abierto: false, reservaId: null, horaSeleccionada: null },
+    modalComprobante: { abierto: false, reserva: null }
+  }
+};
+
+/* ─── Utilidades de fecha y formato ─── */
+const toISOLocal = d =>
+  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+const fechaHoy = () => toISOLocal(new Date());
+
+const offsetFecha = (iso, dias) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return toISOLocal(new Date(y, m - 1, d + dias));
+};
+
+const formatearFecha = iso => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const fecha = new Date(y, m - 1, d);
+  return {
+    dia:     DIAS_ES[fecha.getDay()],
+    completa: `${d} de ${MESES_ES[m - 1]} de ${y}`
+  };
+};
+
+/* ─── Renderizado de Tabs ─── */
+const renderTabs = () => {
+  document.getElementById('tabs-container').innerHTML = AppState.espacios
+    .map(e => `
+      <button
+        class="tab-btn ${e.id === AppState.filtros.espacioSeleccionado ? 'active' : ''}"
+        data-espacio="${e.id}"
+        role="tab"
+        aria-selected="${e.id === AppState.filtros.espacioSeleccionado}"
+        id="tab-${e.id}"
+      >
+        <span class="tab-icon" aria-hidden="true">${e.icono}</span>
+        <span>${e.nombre}</span>
+      </button>
+    `).join('');
+};
+
+/* ─── Renderizado de Fecha ─── */
+const renderFecha = () => {
+  const { dia, completa } = formatearFecha(AppState.filtros.fechaSeleccionada);
+  document.getElementById('date-display').innerHTML =
+    `<div class="date-weekday">${dia}</div><div class="date-full">${completa}</div>`;
+};
+
+/* ─── Renderizado de Cuadrícula ─── */
+const renderCuadricula = bloques => {
+  document.getElementById('cuadricula-container').innerHTML = bloques
+    .map(b => `
+      <div
+        class="slot slot-${b.estado}"
+        ${b.estado !== 'disponible' ? `data-tooltip="${TOOLTIP[b.estado]}"` : 'data-action="reservar"'}
+        data-hora="${b.hora}"
+        role="listitem"
+        aria-label="Bloque ${b.hora}: ${ETIQUETA[b.estado]}${b.estado === 'disponible' ? ' (Haz clic para reservar)' : ' (Haz clic para gestionar)'}"
+        tabindex="${b.estado === 'disponible' || b.estado === 'ocupado' || b.estado === 'pendiente' ? '0' : '-1'}"
+      >
+        <span class="slot-hora">${b.hora}</span>
+        <div class="slot-barra"><div class="slot-barra-fill"></div></div>
+        <span class="slot-label">${ETIQUETA[b.estado]}</span>
+      </div>
+    `).join('');
+};
+
+/* ─── Renderizado completo ─── */
+const renderAll = () => {
+  const { espacioSeleccionado, fechaSeleccionada } = AppState.filtros;
+  renderTabs();
+  renderFecha();
+  renderCuadricula(calcularDisponibilidad(espacioSeleccionado, fechaSeleccionada, AppState.reservas));
+};
+
+/* ─── Actualización de datos y timestamp ─── */
+const actualizarDatos = () => {
+  const { espacios, reservas } = obtenerDatos();
+  AppState.espacios = espacios;
+  AppState.reservas = reservas;
+  AppState.ui.ultimaActualizacion = new Date();
+  if (!AppState.filtros.espacioSeleccionado && espacios.length)
+    AppState.filtros.espacioSeleccionado = espacios[0].id;
+  renderAll();
+};
+
+const actualizarTimestamp = () => {
+  if (!AppState.ui.ultimaActualizacion) return;
+  const seg = Math.floor((Date.now() - AppState.ui.ultimaActualizacion) / 1000);
+  document.getElementById('footer-timestamp').textContent =
+    seg < 5 ? 'Actualizado ahora mismo' : `Actualizado hace ${seg}s`;
+};
+
+/* ─── Polling automático ─── */
+let pollingId = null;
+
+const iniciarPolling = () => {
+  clearInterval(pollingId);
+  pollingId = setInterval(actualizarDatos, 30_000);
+};
+
+/* ─── HU-02: Modal y Formulario de Reserva ─── */
+let toastTimeout = null;
+const mostrarToast = mensaje => {
+  const toast = document.getElementById('toast-notificacion');
+  toast.textContent = mensaje;
+  toast.classList.remove('hidden');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4000);
+};
+
+const abrirModalReserva = hora => {
+  const espacio = AppState.espacios.find(e => e.id === AppState.filtros.espacioSeleccionado);
+  const [h, m] = hora.split(':').map(Number);
+  const horaFin = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const { completa } = formatearFecha(AppState.filtros.fechaSeleccionada);
+
+  document.getElementById('modal-resumen-espacio').textContent = espacio ? `${espacio.icono} ${espacio.nombre}` : '';
+  document.getElementById('modal-resumen-fecha').textContent = completa;
+  document.getElementById('modal-resumen-horario').textContent = `${hora} a ${horaFin} (1 hora)`;
+
+  // Reset form
+  const form = document.getElementById('form-reserva');
+  form.reset();
+  document.getElementById('input-nombre').classList.remove('input-error');
+  document.getElementById('input-telefono').classList.remove('input-error');
+  document.getElementById('error-nombre').textContent = '';
+  document.getElementById('error-telefono').textContent = '';
+
+  AppState.ui.modalReserva = { abierto: true, bloqueSeleccionado: hora };
+  document.getElementById('modal-reserva-overlay').classList.remove('hidden');
+  document.getElementById('input-nombre').focus();
+};
+
+const cerrarModalReserva = () => {
+  document.getElementById('modal-reserva-overlay').classList.add('hidden');
+  AppState.ui.modalReserva = { abierto: false, bloqueSeleccionado: null };
+};
+
+/* ─── HU-03: Modal y Formulario de Gestión ─── */
+const abrirModalGestion = hora => {
+  const { espacioSeleccionado, fechaSeleccionada } = AppState.filtros;
+  const reserva = AppState.reservas.find(r => r.espacioId === espacioSeleccionado && r.fecha === fechaSeleccionada && r.horaInicio === hora);
+  if (!reserva) return;
+  
+  const espacio = AppState.espacios.find(e => e.id === espacioSeleccionado);
+  const [h, m] = hora.split(':').map(Number);
+  const horaFin = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const { completa } = formatearFecha(fechaSeleccionada);
+
+  document.getElementById('modal-gestion-espacio').textContent = espacio ? `${espacio.icono} ${espacio.nombre}` : '';
+  document.getElementById('modal-gestion-fecha').textContent = completa;
+  document.getElementById('modal-gestion-horario').textContent = `${hora} a ${horaFin} (1 hora)`;
+  document.getElementById('modal-gestion-codigo').textContent = reserva.codigoConfirmacion ?? 'N/D';
+
+  document.getElementById('form-gestion').reset();
+  const inputTel = document.getElementById('input-telefono-gestion');
+  inputTel.classList.remove('input-error');
+  document.getElementById('error-telefono-gestion').textContent = '';
+
+  document.getElementById('btn-confirmar-reserva').style.display = reserva.estado === 'pendiente' ? 'inline-block' : 'none';
+
+  AppState.ui.modalGestion = { abierto: true, reservaId: reserva.id, horaSeleccionada: hora };
+  document.getElementById('modal-gestion-overlay').classList.remove('hidden');
+  inputTel.focus();
+};
+
+const cerrarModalGestion = () => {
+  document.getElementById('modal-gestion-overlay').classList.add('hidden');
+  AppState.ui.modalGestion = { abierto: false, reservaId: null, horaSeleccionada: null };
+};
+
+/* ─── HU-04: Modal de Comprobante ─── */
+const abrirModalComprobante = reserva => {
+  const espacio = AppState.espacios.find(e => e.id === reserva.espacioId);
+  const [h, m] = reserva.horaInicio.split(':').map(Number);
+  const horaFin = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const { completa } = formatearFecha(reserva.fecha);
+
+  document.getElementById('comprobante-espacio').textContent = espacio ? `${espacio.icono} ${espacio.nombre}` : reserva.espacioId;
+  document.getElementById('comprobante-fecha').textContent = completa;
+  document.getElementById('comprobante-horario').textContent = `${reserva.horaInicio} a ${horaFin} (1 hora)`;
+  document.getElementById('comprobante-nombre').textContent = reserva.datosContacto?.nombre || '-';
+  document.getElementById('comprobante-codigo').textContent = reserva.codigoConfirmacion;
+
+  AppState.ui.modalComprobante = { abierto: true, reserva };
+  document.getElementById('modal-comprobante-overlay').classList.remove('hidden');
+  document.getElementById('btn-comprobante-cerrar').focus();
+};
+
+const cerrarModalComprobante = () => {
+  document.getElementById('modal-comprobante-overlay').classList.add('hidden');
+  AppState.ui.modalComprobante = { abierto: false, reserva: null };
+  actualizarDatos();
+  iniciarPolling();
+};
+
+/* ─── Manejadores de Eventos ─── */
+
+// Delegación en contenedor de tabs
+document.getElementById('tabs-container').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  AppState.filtros.espacioSeleccionado = btn.dataset.espacio;
+  renderAll();
+});
+
+// Navegación de fecha — día anterior
+document.getElementById('btn-prev-day').addEventListener('click', () => {
+  AppState.filtros.fechaSeleccionada = offsetFecha(AppState.filtros.fechaSeleccionada, -1);
+  renderFecha();
+  renderCuadricula(
+    calcularDisponibilidad(AppState.filtros.espacioSeleccionado, AppState.filtros.fechaSeleccionada, AppState.reservas)
+  );
+});
+
+// Navegación de fecha — día siguiente
+document.getElementById('btn-next-day').addEventListener('click', () => {
+  AppState.filtros.fechaSeleccionada = offsetFecha(AppState.filtros.fechaSeleccionada, +1);
+  renderFecha();
+  renderCuadricula(
+    calcularDisponibilidad(AppState.filtros.espacioSeleccionado, AppState.filtros.fechaSeleccionada, AppState.reservas)
+  );
+});
+
+// Botón actualizar manual
+document.getElementById('btn-refresh').addEventListener('click', () => {
+  actualizarDatos();
+  iniciarPolling();
+});
+
+// HU-02 y HU-03: Clic o Enter en slot
+const manejarSeleccionSlot = e => {
+  const slotDis = e.target.closest('.slot-disponible');
+  if (slotDis && slotDis.dataset.hora) return abrirModalReserva(slotDis.dataset.hora);
+
+  const slotGes = e.target.closest('.slot-ocupado, .slot-pendiente');
+  if (slotGes && slotGes.dataset.hora) return abrirModalGestion(slotGes.dataset.hora);
+};
+
+document.getElementById('cuadricula-container').addEventListener('click', manejarSeleccionSlot);
+document.getElementById('cuadricula-container').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    manejarSeleccionSlot(e);
+  }
+});
+
+// HU-02: Cierre de modal
+document.getElementById('modal-btn-close').addEventListener('click', cerrarModalReserva);
+document.getElementById('modal-btn-cancel').addEventListener('click', cerrarModalReserva);
+document.getElementById('modal-reserva-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-reserva-overlay') cerrarModalReserva();
+});
+
+// HU-03: Cierre de modal de gestión
+document.getElementById('modal-gestion-btn-close').addEventListener('click', cerrarModalGestion);
+document.getElementById('modal-gestion-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-gestion-overlay') cerrarModalGestion();
+});
+
+// HU-04: Cierre de modal de comprobante
+document.getElementById('modal-comprobante-btn-close').addEventListener('click', cerrarModalComprobante);
+document.getElementById('btn-comprobante-cerrar').addEventListener('click', cerrarModalComprobante);
+document.getElementById('modal-comprobante-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-comprobante-overlay') cerrarModalComprobante();
+});
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (AppState.ui.modalReserva.abierto) cerrarModalReserva();
+    if (AppState.ui.modalGestion.abierto) cerrarModalGestion();
+    if (AppState.ui.modalComprobante.abierto) cerrarModalComprobante();
+  }
+});
+
+// HU-02: Envío y validación del formulario de reserva
+document.getElementById('form-reserva').addEventListener('submit', e => {
+  e.preventDefault();
+  const inputNombre   = document.getElementById('input-nombre');
+  const inputTelefono = document.getElementById('input-telefono');
+  const errorNombre   = document.getElementById('error-nombre');
+  const errorTelefono = document.getElementById('error-telefono');
+
+  const nombre   = inputNombre.value.trim();
+  const telefono = inputTelefono.value.trim();
+
+  let valido = true;
+
+  if (!nombre) {
+    inputNombre.classList.add('input-error');
+    errorNombre.textContent = 'Ingresa tu nombre completo';
+    valido = false;
+  } else {
+    inputNombre.classList.remove('input-error');
+    errorNombre.textContent = '';
+  }
+
+  if (!telefono) {
+    inputTelefono.classList.add('input-error');
+    errorTelefono.textContent = 'Ingresa un número telefónico de contacto';
+    valido = false;
+  } else if (telefono.length < 7) {
+    inputTelefono.classList.add('input-error');
+    errorTelefono.textContent = 'El teléfono debe tener al menos 7 dígitos';
+    valido = false;
+  } else {
+    inputTelefono.classList.remove('input-error');
+    errorTelefono.textContent = '';
+  }
+
+  if (!valido) return;
+
+  const horaInicio = AppState.ui.modalReserva.bloqueSeleccionado;
+  const [h, m] = horaInicio.split(':').map(Number);
+  const horaFin = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+  const nuevaReserva = {
+    id: `rsv-${Date.now()}`,
+    espacioId: AppState.filtros.espacioSeleccionado,
+    fecha: AppState.filtros.fechaSeleccionada,
+    horaInicio,
+    horaFin,
+    estado: 'pendiente',
+    codigoConfirmacion: generarCodigoConfirmacion(AppState.filtros.espacioSeleccionado, AppState.filtros.fechaSeleccionada),
+    vecinoId: `vec-${Date.now().toString().slice(-4)}`,
+    datosContacto: { nombre, telefono }
+  };
+
+  agregarReserva(nuevaReserva);
+  cerrarModalReserva();
+  abrirModalComprobante(nuevaReserva);
+});
+
+// HU-03: Envío y validación del formulario de gestión
+document.getElementById('form-gestion').addEventListener('submit', e => {
+  e.preventDefault();
+  gestionarReserva('confirmar');
+});
+
+document.getElementById('btn-cancelar-reserva').addEventListener('click', () => gestionarReserva('cancelar'));
+
+const gestionarReserva = accion => {
+  const reservaId = AppState.ui.modalGestion.reservaId;
+  const reserva = AppState.reservas.find(r => r.id === reservaId);
+  if (!reserva) return;
+
+  const inputTel = document.getElementById('input-telefono-gestion');
+  const errorTel = document.getElementById('error-telefono-gestion');
+  const telefono = inputTel.value.trim();
+
+  if (telefono !== reserva.datosContacto.telefono) {
+    inputTel.classList.add('input-error');
+    errorTel.textContent = 'El teléfono no coincide con la reserva';
+    return;
+  }
+
+  const nuevoEstado = accion === 'cancelar' ? 'cancelada' : 'confirmada';
+  actualizarEstadoReserva(reservaId, nuevoEstado);
+  cerrarModalGestion();
+  actualizarDatos();
+  iniciarPolling();
+  mostrarToast(`✅ Reserva ${nuevoEstado} exitosamente.`);
+};
+
+/* ─── Inicialización ─── */
+AppState.filtros.fechaSeleccionada = fechaHoy();
+actualizarDatos();
+iniciarPolling();
+setInterval(actualizarTimestamp, 1_000);

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Centro Comunitario — Disponibilidad en Tiempo Real</title>
+  <meta name="description" content="Consulta en tiempo real la disponibilidad del Salón Comunal, la Cancha y la Sala de Juntas de tu Centro Comunitario." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="header-brand">
+        <span class="header-logo" aria-hidden="true">🏘️</span>
+        <div>
+          <h1 class="header-title">Centro Comunitario</h1>
+          <p class="header-subtitle">Consulta y reserva de espacios</p>
+        </div>
+      </div>
+      <div class="header-status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="status-text">En tiempo real</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main" id="main-content">
+
+    <section class="card tabs-section" aria-label="Selección de espacio">
+      <p class="section-label">Seleccionar espacio</p>
+      <div id="tabs-container" class="tabs" role="tablist" aria-label="Espacios disponibles"></div>
+    </section>
+
+    <section class="card date-section" aria-label="Selección de fecha">
+      <button class="date-btn" id="btn-prev-day" aria-label="Ir al día anterior">&#8249;</button>
+      <div class="date-display" id="date-display" aria-live="polite"></div>
+      <button class="date-btn" id="btn-next-day" aria-label="Ir al día siguiente">&#8250;</button>
+    </section>
+
+    <section class="card legend-section" aria-label="Leyenda de estados de disponibilidad">
+      <div class="legend-item">
+        <span class="legend-dot disponible" aria-hidden="true"></span>
+        <span>Disponible (clic para reservar)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot ocupado" aria-hidden="true"></span>
+        <span>Ocupado</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot pendiente" aria-hidden="true"></span>
+        <span>Pendiente</span>
+      </div>
+    </section>
+
+    <section class="card grid-section" aria-label="Cuadrícula de disponibilidad horaria">
+      <div id="cuadricula-container" class="cuadricula" role="list"></div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <span id="footer-timestamp" aria-live="polite">Cargando...</span>
+      <button class="refresh-btn" id="btn-refresh" aria-label="Actualizar disponibilidad ahora">
+        <span class="refresh-icon" aria-hidden="true">&#8635;</span> Actualizar
+      </button>
+    </div>
+  </footer>
+
+  <!-- Modal Solicitar Reserva (HU-02) -->
+  <div id="modal-reserva-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">Solicitar Reserva</h2>
+        <button id="modal-btn-close" class="modal-close-btn" aria-label="Cerrar ventana modal">&times;</button>
+      </div>
+      <div class="modal-summary">
+        <p><strong>📍 Espacio:</strong> <span id="modal-resumen-espacio">-</span></p>
+        <p><strong>📅 Fecha:</strong> <span id="modal-resumen-fecha">-</span></p>
+        <p><strong>⏰ Horario:</strong> <span id="modal-resumen-horario">-</span></p>
+      </div>
+      <form id="form-reserva" class="modal-form" novalidate>
+        <div class="form-group">
+          <label for="input-nombre" class="form-label">Nombre completo *</label>
+          <input type="text" id="input-nombre" name="nombre" class="form-input" placeholder="Ej. Ana Gómez" required autocomplete="name" />
+          <span class="form-error" id="error-nombre"></span>
+        </div>
+        <div class="form-group">
+          <label for="input-telefono" class="form-label">Teléfono de contacto *</label>
+          <input type="tel" id="input-telefono" name="telefono" class="form-input" placeholder="Ej. 300 123 4567" required autocomplete="tel" />
+          <span class="form-error" id="error-telefono"></span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="modal-btn-cancel" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" id="modal-btn-submit" class="btn btn-primary">Solicitar Reserva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Gestionar Reserva (HU-03) -->
+  <div id="modal-gestion-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-gestion-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-gestion-title" class="modal-title">Gestionar Reserva</h2>
+        <button id="modal-gestion-btn-close" class="modal-close-btn" aria-label="Cerrar ventana modal">&times;</button>
+      </div>
+      <div class="modal-summary">
+        <p><strong>📍 Espacio:</strong> <span id="modal-gestion-espacio">-</span></p>
+        <p><strong>📅 Fecha:</strong> <span id="modal-gestion-fecha">-</span></p>
+        <p><strong>⏰ Horario:</strong> <span id="modal-gestion-horario">-</span></p>
+        <p><strong>🔑 Código:</strong> <span id="modal-gestion-codigo" class="comprobante-inline">-</span></p>
+      </div>
+      <p class="form-label" style="margin-bottom:0.75rem; color:var(--text-primary)">Para gestionar esta reserva, ingresa el teléfono de contacto:</p>
+      <form id="form-gestion" class="modal-form" novalidate>
+        <div class="form-group">
+          <label for="input-telefono-gestion" class="form-label">Teléfono de contacto *</label>
+          <input type="tel" id="input-telefono-gestion" name="telefono-gestion" class="form-input" placeholder="Ej. 300 123 4567" required autocomplete="tel" />
+          <span class="form-error" id="error-telefono-gestion"></span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancelar-reserva" class="btn btn-danger">Cancelar Reserva</button>
+          <button type="submit" id="btn-confirmar-reserva" class="btn btn-primary">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Comprobante de Reserva (HU-04) -->
+  <div id="modal-comprobante-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-comprobante-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-comprobante-title" class="modal-title">✅ ¡Reserva Registrada!</h2>
+        <button id="modal-comprobante-btn-close" class="modal-close-btn" aria-label="Cerrar">&times;</button>
+      </div>
+      <p class="comprobante-intro">Tu reserva fue registrada exitosamente.</p>
+      <div class="modal-summary">
+        <p><strong>📍 Espacio:</strong> <span id="comprobante-espacio">-</span></p>
+        <p><strong>📅 Fecha:</strong> <span id="comprobante-fecha">-</span></p>
+        <p><strong>⏰ Horario:</strong> <span id="comprobante-horario">-</span></p>
+        <p><strong>👤 Nombre:</strong> <span id="comprobante-nombre">-</span></p>
+      </div>
+      <div class="comprobante-codigo-box">
+        <p class="comprobante-codigo-label">Código de Comprobante</p>
+        <span id="comprobante-codigo" class="comprobante-codigo"></span>
+        <p class="comprobante-codigo-hint">Guarda este código para futuras consultas.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-comprobante-cerrar" class="btn btn-primary">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-notificacion" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="availability.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
