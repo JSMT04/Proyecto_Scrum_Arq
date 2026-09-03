@@ -171,8 +171,14 @@ body {
 
 .tab-icon { font-size: 1.05rem; }
 
-/* === SELECTOR DE FECHA === */
+/* === SELECTOR DE FECHA (HU-01 & HU-06) === */
 .date-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.date-nav-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -205,6 +211,161 @@ body {
 .date-display   { text-align: center; flex: 1; }
 .date-weekday   { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
 .date-full      { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin-top: .1rem; }
+
+.date-picker-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.date-picker-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.date-picker-input:focus {
+  border-color: var(--tab-from);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.btn-today {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-today:hover {
+  background: rgba(79, 70, 229, 0.15);
+  border-color: var(--tab-from);
+  color: var(--text-primary);
+}
+
+.btn-today.active-today {
+  border-color: var(--color-disponible);
+  color: var(--color-disponible);
+}
+
+/* === PANEL DE FILTROS (HU-06) === */
+.filters-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filters-header .section-label {
+  margin-bottom: 0;
+}
+
+.filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-checkbox {
+  accent-color: var(--tab-from);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.filter-pill:hover {
+  border-color: var(--tab-from);
+  color: var(--text-primary);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.filter-pill.active {
+  background: linear-gradient(135deg, var(--tab-from), var(--tab-to));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
+}
+
+/* Estado Vacío de Cuadrícula */
+.empty-grid-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.empty-grid-icon {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+.empty-grid-text {
+  font-size: 0.9rem;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.empty-grid-btn {
+  background: rgba(79, 70, 229, 0.15);
+  border: 1px solid var(--tab-from);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 0.25rem;
+}
+
+.empty-grid-btn:hover {
+  background: var(--tab-from);
+}
 
 /* === LEYENDA === */
 .legend-section {
@@ -699,6 +860,12 @@ body {
 
   .ficha-stats { gap: 0.5rem; }
   .ficha-stat  { font-size: 0.75rem; padding: 0.25rem 0.55rem; }
+
+  .filter-pills { gap: 0.35rem; }
+  .filter-pill  { font-size: 0.75rem; padding: 0.35rem 0.65rem; }
+  .date-picker-controls { flex-direction: column; width: 100%; }
+  .date-picker-input { width: 100%; text-align: center; }
+  .btn-today { width: 100%; }
 
   .slot {
     grid-template-columns: 48px 1fr;

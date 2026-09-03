@@ -36,9 +36,31 @@
     </section>
 
     <section class="card date-section" aria-label="Selección de fecha">
-      <button class="date-btn" id="btn-prev-day" aria-label="Ir al día anterior">&#8249;</button>
-      <div class="date-display" id="date-display" aria-live="polite"></div>
-      <button class="date-btn" id="btn-next-day" aria-label="Ir al día siguiente">&#8250;</button>
+      <div class="date-nav-controls">
+        <button class="date-btn" id="btn-prev-day" aria-label="Ir al día anterior">&#8249;</button>
+        <div class="date-display" id="date-display" aria-live="polite"></div>
+        <button class="date-btn" id="btn-next-day" aria-label="Ir al día siguiente">&#8250;</button>
+      </div>
+      <div class="date-picker-controls">
+        <input type="date" id="input-date-picker" class="date-picker-input" aria-label="Elegir fecha" />
+        <button id="btn-today" class="btn-today" aria-label="Ir a la fecha de hoy">Hoy</button>
+      </div>
+    </section>
+
+    <section class="card filters-section" aria-label="Filtros de horario y disponibilidad">
+      <div class="filters-header">
+        <span class="section-label">Filtrar horarios</span>
+        <label class="filter-checkbox-label">
+          <input type="checkbox" id="check-solo-disponibles" class="filter-checkbox" />
+          <span>Solo disponibles</span>
+        </label>
+      </div>
+      <div class="filter-pills" role="toolbar" aria-label="Franja horaria">
+        <button class="filter-pill active" data-franja="todas" aria-pressed="true">Todas</button>
+        <button class="filter-pill" data-franja="manana" aria-pressed="false">Mañana (07-12)</button>
+        <button class="filter-pill" data-franja="tarde" aria-pressed="false">Tarde (12-18)</button>
+        <button class="filter-pill" data-franja="noche" aria-pressed="false">Noche (18-22)</button>
+      </div>
     </section>
 
     <section class="card legend-section" aria-label="Leyenda de estados de disponibilidad">

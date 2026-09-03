@@ -10,7 +10,12 @@ const ETIQUETA  = { disponible: 'Disponible', ocupado: 'Ocupado', pendiente: 'Pe
 const AppState = {
   espacios: [],
   reservas: [],
-  filtros: { espacioSeleccionado: '', fechaSeleccionada: '' },
+  filtros: {
+    espacioSeleccionado: '',
+    fechaSeleccionada: '',
+    franjaHoraria: 'todas',
+    soloDisponibles: false
+  },
   ui: {
     cargando: false,
     ultimaActualizacion: null,
@@ -40,6 +45,20 @@ const formatearFecha = iso => {
   };
 };
 
+/* ─── Lógica de filtrado de horarios (HU-06) ─── */
+const filtrarBloques = (bloques, { franjaHoraria, soloDisponibles }) =>
+  bloques.filter(b => {
+    const horaNum = parseInt(b.hora.split(':')[0], 10);
+    let coincideFranja = true;
+    if (franjaHoraria === 'manana') coincideFranja = horaNum >= 7 && horaNum < 12;
+    else if (franjaHoraria === 'tarde') coincideFranja = horaNum >= 12 && horaNum < 18;
+    else if (franjaHoraria === 'noche') coincideFranja = horaNum >= 18 && horaNum < 22;
+
+    if (!coincideFranja) return false;
+    if (soloDisponibles && b.estado !== 'disponible') return false;
+    return true;
+  });
+
 /* ─── Renderizado de Tabs ─── */
 const renderTabs = () => {
   document.getElementById('tabs-container').innerHTML = AppState.espacios
@@ -64,9 +83,45 @@ const renderFecha = () => {
     `<div class="date-weekday">${dia}</div><div class="date-full">${completa}</div>`;
 };
 
+/* ─── Renderizado de Filtros (HU-06) ─── */
+const renderFiltros = () => {
+  const inputPicker = document.getElementById('input-date-picker');
+  if (inputPicker && inputPicker.value !== AppState.filtros.fechaSeleccionada) {
+    inputPicker.value = AppState.filtros.fechaSeleccionada;
+  }
+
+  const btnToday = document.getElementById('btn-today');
+  if (btnToday) {
+    const esHoy = AppState.filtros.fechaSeleccionada === fechaHoy();
+    btnToday.classList.toggle('active-today', esHoy);
+    btnToday.textContent = esHoy ? '✓ Hoy' : 'Hoy';
+  }
+
+  const checkSoloDisp = document.getElementById('check-solo-disponibles');
+  if (checkSoloDisp) checkSoloDisp.checked = AppState.filtros.soloDisponibles;
+
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    const activo = btn.dataset.franja === AppState.filtros.franjaHoraria;
+    btn.classList.toggle('active', activo);
+    btn.setAttribute('aria-pressed', String(activo));
+  });
+};
+
 /* ─── Renderizado de Cuadrícula ─── */
 const renderCuadricula = bloques => {
-  document.getElementById('cuadricula-container').innerHTML = bloques
+  const container = document.getElementById('cuadricula-container');
+  if (!bloques || !bloques.length) {
+    container.innerHTML = `
+      <div class="empty-grid-state" role="status">
+        <span class="empty-grid-icon" aria-hidden="true">🔍</span>
+        <p class="empty-grid-text">No se encontraron horarios con los filtros seleccionados.</p>
+        <button type="button" class="empty-grid-btn" id="btn-reset-filters">Restablecer filtros</button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = bloques
     .map(b => `
       <div
         class="slot slot-${b.estado}"
@@ -118,10 +173,13 @@ const renderFichaEspacio = () => {
 
 /* ─── Renderizado completo ─── */
 const renderAll = () => {
-  const { espacioSeleccionado, fechaSeleccionada } = AppState.filtros;
+  const { espacioSeleccionado, fechaSeleccionada, franjaHoraria, soloDisponibles } = AppState.filtros;
   renderTabs();
   renderFecha();
-  renderCuadricula(calcularDisponibilidad(espacioSeleccionado, fechaSeleccionada, AppState.reservas));
+  renderFiltros();
+  const todosBloques = calcularDisponibilidad(espacioSeleccionado, fechaSeleccionada, AppState.reservas);
+  const bloquesFiltrados = filtrarBloques(todosBloques, { franjaHoraria, soloDisponibles });
+  renderCuadricula(bloquesFiltrados);
   renderFichaEspacio();
 };
 
@@ -260,20 +318,54 @@ document.getElementById('tabs-container').addEventListener('click', e => {
 // Navegación de fecha — día anterior
 document.getElementById('btn-prev-day').addEventListener('click', () => {
   AppState.filtros.fechaSeleccionada = offsetFecha(AppState.filtros.fechaSeleccionada, -1);
-  renderFecha();
-  renderCuadricula(
-    calcularDisponibilidad(AppState.filtros.espacioSeleccionado, AppState.filtros.fechaSeleccionada, AppState.reservas)
-  );
+  renderAll();
 });
 
 // Navegación de fecha — día siguiente
 document.getElementById('btn-next-day').addEventListener('click', () => {
   AppState.filtros.fechaSeleccionada = offsetFecha(AppState.filtros.fechaSeleccionada, +1);
-  renderFecha();
-  renderCuadricula(
-    calcularDisponibilidad(AppState.filtros.espacioSeleccionado, AppState.filtros.fechaSeleccionada, AppState.reservas)
-  );
+  renderAll();
 });
+
+// HU-06: Selector de fecha directa
+const inputPickerEl = document.getElementById('input-date-picker');
+if (inputPickerEl) {
+  inputPickerEl.addEventListener('change', e => {
+    if (e.target.value) {
+      AppState.filtros.fechaSeleccionada = e.target.value;
+      renderAll();
+    }
+  });
+}
+
+// HU-06: Botón Hoy
+const btnTodayEl = document.getElementById('btn-today');
+if (btnTodayEl) {
+  btnTodayEl.addEventListener('click', () => {
+    AppState.filtros.fechaSeleccionada = fechaHoy();
+    renderAll();
+  });
+}
+
+// HU-06: Filtro por Franja Horaria (delegación de clicks)
+const filterPillsContainer = document.querySelector('.filter-pills');
+if (filterPillsContainer) {
+  filterPillsContainer.addEventListener('click', e => {
+    const pill = e.target.closest('.filter-pill');
+    if (!pill || !pill.dataset.franja) return;
+    AppState.filtros.franjaHoraria = pill.dataset.franja;
+    renderAll();
+  });
+}
+
+// HU-06: Checkbox Solo Disponibles
+const checkSoloDispEl = document.getElementById('check-solo-disponibles');
+if (checkSoloDispEl) {
+  checkSoloDispEl.addEventListener('change', e => {
+    AppState.filtros.soloDisponibles = e.target.checked;
+    renderAll();
+  });
+}
 
 // Botón actualizar manual
 document.getElementById('btn-refresh').addEventListener('click', () => {
@@ -281,8 +373,14 @@ document.getElementById('btn-refresh').addEventListener('click', () => {
   iniciarPolling();
 });
 
-// HU-02 y HU-03: Clic o Enter en slot
+// HU-02, HU-03 & HU-06: Clic o Enter en slot o reset de filtros
 const manejarSeleccionSlot = e => {
+  if (e.target.closest('#btn-reset-filters')) {
+    AppState.filtros.franjaHoraria = 'todas';
+    AppState.filtros.soloDisponibles = false;
+    return renderAll();
+  }
+
   const slotDis = e.target.closest('.slot-disponible');
   if (slotDis && slotDis.dataset.hora) return abrirModalReserva(slotDis.dataset.hora);
 
