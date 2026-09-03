@@ -14,3 +14,16 @@ Recibirás el reporte `PASÓ` del Agente 04-QA junto con el código probado y la
 3. **Guía de Demostración:** Pasos exactos (click a click) para que el Scrum Master ejecute la demo en vivo durante la presentación final.
 
 Manejo de Archivos: Inspecciona los cambios realizados en 02_Codigo/ y guarda automáticamente el resumen del incremento y el registro del Daily Scrum en la ruta 03_Evidencias/Daily_Sprint(x).md.
+---
+### EJECUCIÓN AUTOMÁTICA EN TERMINAL (AUTO-PUSH GITHUB)
+
+Una vez guardado el reporte en `03_Evidencias/`, DEBES ejecutar de manera autónoma los siguientes comandos usando tu herramienta de ejecución de terminal/bash:
+
+1. `git add .`
+2. `git commit -m "feat(Sprint-[Nº]): completar [ID_HU] - [Nombre corto de la HU]"`
+3. `git push origin main`
+
+**Reglas de ejecución:**
+* Invocación directa: Ejecuta los tres comandos secuencialmente en la terminal interactiva del IDE.
+* Verificación: Revisa que la salida del `git push` confirme el envío exitoso a la rama `main`.
+* Confirmación al usuario: Confirma en el mensaje final que los cambios ya se encuentran reflejados en el repositorio remoto en GitHub con el hash correspondiente.

@@ -7,9 +7,48 @@ const MANANA = isoLocal(new Date(new Date().setDate(new Date().getDate() + 1)));
 const PASADO = isoLocal(new Date(new Date().setDate(new Date().getDate() + 2)));
 
 const ESPACIOS = [
-  { id: 'salon_comunal', nombre: 'Salón Comunal', icono: '🏛️', capacidad: 80, descripcion: 'Salón principal para eventos y reuniones grandes' },
-  { id: 'cancha',        nombre: 'Cancha',         icono: '⚽', capacidad: 30, descripcion: 'Cancha polideportiva techada para deportes y actividades físicas' },
-  { id: 'sala_juntas',   nombre: 'Sala de Juntas', icono: '📋', capacidad: 20, descripcion: 'Sala de reuniones para comités y juntas de vecinos' }
+  {
+    id: 'salon_comunal',
+    nombre: 'Salón Comunal',
+    icono: '🏛️',
+    capacidad: 80,
+    descripcion: 'Salón principal para eventos y reuniones grandes',
+    equipamiento: [
+      '🎤 Sistema de sonido',
+      '📽️ Proyector y pantalla',
+      '💡 Iluminación regulable',
+      '🪑 80 sillas y 10 mesas',
+      '❄️ Aire acondicionado'
+    ]
+  },
+  {
+    id: 'cancha',
+    nombre: 'Cancha',
+    icono: '⚽',
+    capacidad: 30,
+    descripcion: 'Cancha polideportiva techada para deportes y actividades físicas',
+    equipamiento: [
+      '⚽ Arcos de fútbol',
+      '🏀 Tableros de baloncesto',
+      '🔦 Iluminación LED',
+      '🚿 Vestuarios y duchas',
+      '🏁 Marcadores de cancha'
+    ]
+  },
+  {
+    id: 'sala_juntas',
+    nombre: 'Sala de Juntas',
+    icono: '📋',
+    capacidad: 20,
+    descripcion: 'Sala de reuniones para comités y juntas de vecinos',
+    equipamiento: [
+      '💻 TV/Monitor para presentaciones',
+      '🖊️ Pizarrón blanco',
+      '📡 WiFi dedicado',
+      '🪑 20 sillas ergonómicas',
+      '☕ Zona de café'
+    ]
+  }
 ];
 
 const generarCodigoConfirmacion = (espacioId, fecha) => {

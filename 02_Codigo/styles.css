@@ -614,6 +614,79 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* === FICHA INFORMATIVA DE ESPACIO (HU-05) === */
+
+.ficha-espacio {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.ficha-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.ficha-icono { font-size: 1.4rem; line-height: 1; }
+
+.ficha-nombre {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ficha-descripcion {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.85rem;
+  line-height: 1.5;
+}
+
+.ficha-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.ficha-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.7rem;
+}
+
+.ficha-stat strong { color: var(--text-primary); }
+
+.ficha-equipamiento-titulo {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.ficha-equipamiento-lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ficha-equipamiento-lista li {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding-left: 0.25rem;
+}
+
 /* === RESPONSIVO (mobile-first, breakpoint 480px) === */
 @media (max-width: 480px) {
   .main   { padding: .75rem; gap: .75rem; }
@@ -623,6 +696,9 @@ body {
 
   .tab-btn { padding: .55rem .85rem; font-size: .8rem; }
   .tabs    { gap: .35rem; }
+
+  .ficha-stats { gap: 0.5rem; }
+  .ficha-stat  { font-size: 0.75rem; padding: 0.25rem 0.55rem; }
 
   .slot {
     grid-template-columns: 48px 1fr;

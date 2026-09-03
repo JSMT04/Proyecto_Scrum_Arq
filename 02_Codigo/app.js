@@ -83,12 +83,46 @@ const renderCuadricula = bloques => {
     `).join('');
 };
 
+/* ─── Renderizado de ficha informativa (HU-05) ─── */
+const renderFichaEspacio = () => {
+  const container = document.getElementById('ficha-espacio');
+  if (!container) return;
+  const espacio = AppState.espacios.find(e => e.id === AppState.filtros.espacioSeleccionado);
+  if (!espacio) {
+    container.innerHTML = '';
+    return;
+  }
+  const aforo = Math.round(espacio.capacidad * 0.75);
+  const equipamientoHtml = (espacio.equipamiento || [])
+    .map(item => `<li>${item}</li>`)
+    .join('');
+
+  container.innerHTML = `
+    <div class="ficha-header">
+      <span class="ficha-icono" aria-hidden="true">${espacio.icono}</span>
+      <h2 class="ficha-nombre">${espacio.nombre}</h2>
+    </div>
+    <p class="ficha-descripcion">${espacio.descripcion}</p>
+    <div class="ficha-stats">
+      <div class="ficha-stat">👥 Capacidad total: <strong>${espacio.capacidad} personas</strong></div>
+      <div class="ficha-stat">✅ Aforo permitido (75%): <strong>${aforo} personas</strong></div>
+    </div>
+    <div class="ficha-equipamiento">
+      <p class="ficha-equipamiento-titulo">Equipamiento disponible</p>
+      <ul class="ficha-equipamiento-lista">
+        ${equipamientoHtml}
+      </ul>
+    </div>
+  `;
+};
+
 /* ─── Renderizado completo ─── */
 const renderAll = () => {
   const { espacioSeleccionado, fechaSeleccionada } = AppState.filtros;
   renderTabs();
   renderFecha();
   renderCuadricula(calcularDisponibilidad(espacioSeleccionado, fechaSeleccionada, AppState.reservas));
+  renderFichaEspacio();
 };
 
 /* ─── Actualización de datos y timestamp ─── */
