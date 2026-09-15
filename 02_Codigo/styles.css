@@ -888,3 +888,212 @@ body {
     justify-content: center;
   }
 }
+
+/* === HISTORIAL DE RESERVAS (HU-07) === */
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-historial {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .45rem .9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,.04);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.btn-historial:hover {
+  border-color: var(--tab-from);
+  color: var(--text-primary);
+  background: rgba(79,70,229,.12);
+  transform: translateY(-1px);
+}
+
+.historial-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+}
+
+.historial-overlay.hidden { display: none; }
+
+.historial-panel {
+  background: rgba(22,27,34,.97);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 24px 48px rgba(0,0,0,.65);
+  animation: modal-in .22s cubic-bezier(0.16,1,0.3,1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.historial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.historial-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.historial-subtitle {
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-top: .2rem;
+}
+
+.historial-search {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.historial-search-row {
+  display: flex;
+  gap: .65rem;
+}
+
+.historial-search-row .form-input { flex: 1; }
+
+.historial-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.historial-resultados.hidden { display: none; }
+
+.historial-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.historial-grupo-titulo {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  padding-bottom: .45rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.historial-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: .9rem 1.1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: .75rem;
+  transition: var(--transition);
+}
+
+.historial-card:hover {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(79,70,229,.35);
+  transform: translateX(3px);
+}
+
+.historial-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.historial-card-espacio {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.historial-card-meta {
+  font-size: .78rem;
+  color: var(--text-secondary);
+}
+
+.historial-card-codigo {
+  font-family: 'Courier New', monospace;
+  font-size: .72rem;
+  color: var(--tab-from);
+  margin-top: .1rem;
+  letter-spacing: .04em;
+}
+
+.badge {
+  padding: .3rem .7rem;
+  border-radius: 20px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-pendiente  { background: var(--color-pendiente-bg);  color: var(--color-pendiente);  border: 1px solid var(--color-pendiente-brd); }
+.badge-confirmada { background: var(--color-disponible-bg); color: var(--color-disponible); border: 1px solid var(--color-disponible-brd); }
+.badge-cancelada  { background: var(--color-ocupado-bg);    color: var(--color-ocupado);    border: 1px solid var(--color-ocupado-brd); }
+
+.historial-vacio {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  color: var(--text-secondary);
+}
+
+.historial-vacio.hidden { display: none; }
+
+.historial-vacio-icon { font-size: 2.5rem; opacity: .7; }
+
+.historial-vacio p { font-size: .9rem; }
+
+@media (max-width: 480px) {
+  .historial-panel { padding: 1.25rem; gap: 1rem; }
+  .historial-title { font-size: 1rem; }
+  .historial-search-row { flex-direction: column; }
+  .historial-card { grid-template-columns: 1fr; }
+  .badge { align-self: flex-start; }
+  .btn-historial span { display: none; }
+}
+

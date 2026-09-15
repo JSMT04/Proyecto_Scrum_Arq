@@ -20,9 +20,14 @@
           <p class="header-subtitle">Consulta y reserva de espacios</p>
         </div>
       </div>
-      <div class="header-status" aria-live="polite">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span id="status-text">En tiempo real</span>
+      <div class="header-right">
+        <button id="btn-mis-reservas" class="btn-historial" aria-label="Ver mis reservas">
+          📋 Mis Reservas
+        </button>
+        <div class="header-status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-text">En tiempo real</span>
+        </div>
       </div>
     </div>
   </header>
@@ -83,6 +88,44 @@
     </section>
 
   </main>
+
+  <!-- Historial de Reservas (HU-07) -->
+  <div id="historial-overlay" class="historial-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="historial-title">
+    <div class="historial-panel">
+      <div class="historial-header">
+        <div>
+          <h2 id="historial-title" class="historial-title">📋 Mis Reservas</h2>
+          <p class="historial-subtitle">Consulta tu historial personal de reservas</p>
+        </div>
+        <button id="btn-historial-close" class="modal-close-btn" aria-label="Cerrar historial">&#x2715;</button>
+      </div>
+
+      <div class="historial-search">
+        <label for="input-tel-historial" class="form-label">Ingresa tu teléfono de contacto</label>
+        <div class="historial-search-row">
+          <input type="tel" id="input-tel-historial" class="form-input" placeholder="Ej. 300 123 4567" autocomplete="tel" />
+          <button id="btn-buscar-historial" class="btn btn-primary">Buscar</button>
+        </div>
+        <span class="form-error" id="error-tel-historial"></span>
+      </div>
+
+      <div id="historial-resultados" class="historial-resultados hidden">
+        <div class="historial-grupo" id="grupo-proximas">
+          <h3 class="historial-grupo-titulo">📅 Próximas</h3>
+          <div id="lista-proximas" class="historial-lista"></div>
+        </div>
+        <div class="historial-grupo" id="grupo-pasadas">
+          <h3 class="historial-grupo-titulo">📁 Pasadas</h3>
+          <div id="lista-pasadas" class="historial-lista"></div>
+        </div>
+      </div>
+
+      <div id="historial-vacio" class="historial-vacio hidden">
+        <span class="historial-vacio-icon" aria-hidden="true">📭</span>
+        <p>No se encontraron reservas para este número.</p>
+      </div>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="footer-content">

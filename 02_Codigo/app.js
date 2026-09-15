@@ -21,7 +21,8 @@ const AppState = {
     ultimaActualizacion: null,
     modalReserva: { abierto: false, bloqueSeleccionado: null },
     modalGestion: { abierto: false, reservaId: null, horaSeleccionada: null },
-    modalComprobante: { abierto: false, reserva: null }
+    modalComprobante: { abierto: false, reserva: null },
+    historial: { abierto: false, telefonoBusqueda: '' }
   }
 };
 
@@ -199,6 +200,88 @@ const actualizarTimestamp = () => {
   const seg = Math.floor((Date.now() - AppState.ui.ultimaActualizacion) / 1000);
   document.getElementById('footer-timestamp').textContent =
     seg < 5 ? 'Actualizado ahora mismo' : `Actualizado hace ${seg}s`;
+};
+
+/* ─── HU-07: Historial de Reservas ─── */
+const BADGE_LABELS = { pendiente: '🟡 Pendiente', confirmada: '🟢 Confirmada', cancelada: '🔴 Cancelada' };
+
+const renderTarjetaReserva = r => {
+  const espacio = AppState.espacios.find(e => e.id === r.espacioId);
+  const { completa } = formatearFecha(r.fecha);
+  const [h] = r.horaInicio.split(':').map(Number);
+  const horaFin = `${String(h + 1).padStart(2, '0')}:${r.horaInicio.split(':')[1]}`;
+  return `
+    <div class="historial-card">
+      <div class="historial-card-info">
+        <span class="historial-card-espacio">${espacio ? espacio.icono + ' ' + espacio.nombre : r.espacioId}</span>
+        <span class="historial-card-meta">📅 ${completa} &nbsp;|&nbsp; ⏰ ${r.horaInicio} – ${horaFin}</span>
+        <span class="historial-card-codigo">🔑 ${r.codigoConfirmacion}</span>
+      </div>
+      <span class="badge badge-${r.estado}">${BADGE_LABELS[r.estado] ?? r.estado}</span>
+    </div>
+  `;
+};
+
+const renderHistorial = reservas => {
+  const hoy = fechaHoy();
+  const proximas = reservas.filter(r => r.fecha >= hoy);
+  const pasadas  = reservas.filter(r => r.fecha <  hoy);
+
+  const resultados = document.getElementById('historial-resultados');
+  const vacio      = document.getElementById('historial-vacio');
+
+  if (!reservas.length) {
+    resultados.classList.add('hidden');
+    vacio.classList.remove('hidden');
+    return;
+  }
+
+  vacio.classList.add('hidden');
+  resultados.classList.remove('hidden');
+
+  const listaProx = document.getElementById('lista-proximas');
+  const listaPas  = document.getElementById('lista-pasadas');
+  const grupoProx = document.getElementById('grupo-proximas');
+  const grupoPas  = document.getElementById('grupo-pasadas');
+
+  listaProx.innerHTML = proximas.length ? proximas.map(renderTarjetaReserva).join('') : '<p style="font-size:.82rem;color:var(--text-muted);padding:.5rem 0">Sin reservas próximas.</p>';
+  listaPas.innerHTML  = pasadas.length  ? pasadas.map(renderTarjetaReserva).join('')  : '<p style="font-size:.82rem;color:var(--text-muted);padding:.5rem 0">Sin reservas pasadas.</p>';
+
+  grupoProx.style.display = 'flex';
+  grupoPas.style.display  = 'flex';
+};
+
+const buscarHistorial = () => {
+  const input    = document.getElementById('input-tel-historial');
+  const errorEl  = document.getElementById('error-tel-historial');
+  const telefono = input.value.trim();
+
+  if (!telefono) {
+    input.classList.add('input-error');
+    errorEl.textContent = 'Ingresa tu número de teléfono para buscar.';
+    return;
+  }
+  input.classList.remove('input-error');
+  errorEl.textContent = '';
+
+  const encontradas = AppState.reservas.filter(r => r.datosContacto?.telefono === telefono);
+  AppState.ui.historial.telefonoBusqueda = telefono;
+  renderHistorial(encontradas);
+};
+
+const abrirHistorial = () => {
+  document.getElementById('historial-overlay').classList.remove('hidden');
+  document.getElementById('input-tel-historial').value = AppState.ui.historial.telefonoBusqueda;
+  document.getElementById('historial-resultados').classList.add('hidden');
+  document.getElementById('historial-vacio').classList.add('hidden');
+  document.getElementById('error-tel-historial').textContent = '';
+  AppState.ui.historial.abierto = true;
+  document.getElementById('input-tel-historial').focus();
+};
+
+const cerrarHistorial = () => {
+  document.getElementById('historial-overlay').classList.add('hidden');
+  AppState.ui.historial.abierto = false;
 };
 
 /* ─── Polling automático ─── */
@@ -421,7 +504,19 @@ window.addEventListener('keydown', e => {
     if (AppState.ui.modalReserva.abierto) cerrarModalReserva();
     if (AppState.ui.modalGestion.abierto) cerrarModalGestion();
     if (AppState.ui.modalComprobante.abierto) cerrarModalComprobante();
+    if (AppState.ui.historial.abierto) cerrarHistorial();
   }
+});
+
+/* ─── HU-07: Listeners del Historial ─── */
+document.getElementById('btn-mis-reservas').addEventListener('click', abrirHistorial);
+document.getElementById('btn-historial-close').addEventListener('click', cerrarHistorial);
+document.getElementById('historial-overlay').addEventListener('click', e => {
+  if (e.target.id === 'historial-overlay') cerrarHistorial();
+});
+document.getElementById('btn-buscar-historial').addEventListener('click', buscarHistorial);
+document.getElementById('input-tel-historial').addEventListener('keydown', e => {
+  if (e.key === 'Enter') buscarHistorial();
 });
 
 // HU-02: Envío y validación del formulario de reserva
