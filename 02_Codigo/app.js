@@ -3,8 +3,8 @@
 /* ─── Constantes de UI ─── */
 const DIAS_ES   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MESES_ES  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const TOOLTIP   = { ocupado: 'Reservado', pendiente: 'Pendiente de confirmación' };
-const ETIQUETA  = { disponible: 'Disponible', ocupado: 'Ocupado', pendiente: 'Pendiente' };
+const TOOLTIP   = { ocupado: 'Reservado', pendiente: 'Pendiente de confirmación', bloqueado: 'Bloqueado por mantenimiento 🛠️' };
+const ETIQUETA  = { disponible: 'Disponible', ocupado: 'Ocupado', pendiente: 'Pendiente', bloqueado: 'Mantenimiento 🛠️' };
 
 /* ─── Estado global ─── */
 const AppState = {
@@ -19,6 +19,7 @@ const AppState = {
   ui: {
     cargando: false,
     ultimaActualizacion: null,
+    modoAdmin: false,
     modalReserva: { abierto: false, bloqueSeleccionado: null },
     modalGestion: { abierto: false, reservaId: null, horaSeleccionada: null },
     modalComprobante: { abierto: false, reserva: null },
@@ -124,20 +125,57 @@ const renderCuadricula = bloques => {
   }
 
   container.innerHTML = bloques
-    .map(b => `
-      <div
-        class="slot slot-${b.estado}"
-        ${b.estado !== 'disponible' ? `data-tooltip="${TOOLTIP[b.estado]}"` : 'data-action="reservar"'}
-        data-hora="${b.hora}"
-        role="listitem"
-        aria-label="Bloque ${b.hora}: ${ETIQUETA[b.estado]}${b.estado === 'disponible' ? ' (Haz clic para reservar)' : ' (Haz clic para gestionar)'}"
-        tabindex="${b.estado === 'disponible' || b.estado === 'ocupado' || b.estado === 'pendiente' ? '0' : '-1'}"
-      >
-        <span class="slot-hora">${b.hora}</span>
-        <div class="slot-barra"><div class="slot-barra-fill"></div></div>
-        <span class="slot-label">${ETIQUETA[b.estado]}</span>
-      </div>
-    `).join('');
+    .map(b => {
+      let tooltipAttr = b.estado !== 'disponible' ? `data-tooltip="${TOOLTIP[b.estado]}"` : '';
+      let actionAttr = '';
+      let ariaHint = '';
+      let tabIndex = '-1';
+
+      if (AppState.ui.modoAdmin) {
+        tabIndex = '0';
+        if (b.estado === 'disponible') {
+          actionAttr = 'data-action="bloquear"';
+          tooltipAttr = 'data-tooltip="Clic para bloquear por mantenimiento"';
+          ariaHint = ' (Clic para bloquear por mantenimiento)';
+        } else if (b.estado === 'bloqueado') {
+          actionAttr = 'data-action="desbloquear"';
+          tooltipAttr = 'data-tooltip="Clic para desbloquear horario"';
+          ariaHint = ' (Clic para desbloquear horario)';
+        } else {
+          actionAttr = 'data-action="gestionar"';
+          ariaHint = ' (Clic para gestionar)';
+        }
+      } else {
+        if (b.estado === 'disponible') {
+          actionAttr = 'data-action="reservar"';
+          tabIndex = '0';
+          ariaHint = ' (Haz clic para reservar)';
+        } else if (b.estado === 'ocupado' || b.estado === 'pendiente') {
+          actionAttr = 'data-action="gestionar"';
+          tabIndex = '0';
+          ariaHint = ' (Haz clic para gestionar)';
+        } else if (b.estado === 'bloqueado') {
+          ariaHint = ' (No disponible por mantenimiento)';
+        }
+      }
+
+      return `
+        <div
+          class="slot slot-${b.estado}"
+          ${tooltipAttr}
+          ${actionAttr}
+          data-hora="${b.hora}"
+          ${b.reservaId ? `data-reserva-id="${b.reservaId}"` : ''}
+          role="listitem"
+          aria-label="Bloque ${b.hora}: ${ETIQUETA[b.estado]}${ariaHint}"
+          tabindex="${tabIndex}"
+        >
+          <span class="slot-hora">${b.hora}</span>
+          <div class="slot-barra"><div class="slot-barra-fill"></div></div>
+          <span class="slot-label">${ETIQUETA[b.estado]}</span>
+        </div>
+      `;
+    }).join('');
 };
 
 /* ─── Renderizado de ficha informativa (HU-05) ─── */
@@ -518,7 +556,21 @@ document.getElementById('btn-refresh').addEventListener('click', () => {
   iniciarPolling();
 });
 
-// HU-02, HU-03 & HU-06: Clic o Enter en slot o reset de filtros
+// HU-09: Alternar Modo Administrador
+const alternarModoAdmin = () => {
+  AppState.ui.modoAdmin = !AppState.ui.modoAdmin;
+  const btn = document.getElementById('btn-modo-admin');
+  if (btn) {
+    btn.classList.toggle('admin-active', AppState.ui.modoAdmin);
+    btn.setAttribute('aria-pressed', String(AppState.ui.modoAdmin));
+    btn.innerHTML = AppState.ui.modoAdmin ? '🛡️ Admin Activo' : '🛡️ Modo Admin';
+  }
+  document.body.classList.toggle('admin-mode-on', AppState.ui.modoAdmin);
+  renderAll();
+  mostrarToast(AppState.ui.modoAdmin ? '🛡️ Modo Administrador Activado' : '👤 Modo Vecino Activado');
+};
+
+// HU-02, HU-03, HU-06 & HU-09: Clic o Enter en slot o reset de filtros
 const manejarSeleccionSlot = e => {
   if (e.target.closest('#btn-reset-filters')) {
     AppState.filtros.franjaHoraria = 'todas';
@@ -526,11 +578,59 @@ const manejarSeleccionSlot = e => {
     return renderAll();
   }
 
-  const slotDis = e.target.closest('.slot-disponible');
-  if (slotDis && slotDis.dataset.hora) return abrirModalReserva(slotDis.dataset.hora);
+  const slot = e.target.closest('.slot');
+  if (!slot || !slot.dataset.hora) return;
 
-  const slotGes = e.target.closest('.slot-ocupado, .slot-pendiente');
-  if (slotGes && slotGes.dataset.hora) return abrirModalGestion(slotGes.dataset.hora);
+  const hora = slot.dataset.hora;
+  const estado = slot.classList.contains('slot-disponible') ? 'disponible'
+               : slot.classList.contains('slot-bloqueado') ? 'bloqueado'
+               : slot.classList.contains('slot-ocupado') ? 'ocupado'
+               : slot.classList.contains('slot-pendiente') ? 'pendiente' : '';
+
+  if (AppState.ui.modoAdmin) {
+    if (estado === 'disponible') {
+      const [h, m] = hora.split(':').map(Number);
+      const horaFin = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      bloquearHorarioMantenimiento(AppState.filtros.espacioSeleccionado, AppState.filtros.fechaSeleccionada, hora, horaFin);
+      actualizarDatos();
+      iniciarPolling();
+      mostrarToast(`🛠️ Horario ${hora} bloqueado por mantenimiento.`);
+      return;
+    }
+    if (estado === 'bloqueado') {
+      const reservaId = slot.dataset.reservaId;
+      if (reservaId) {
+        desbloquearHorarioMantenimiento(reservaId);
+      } else {
+        const rsv = AppState.reservas.find(r =>
+          r.espacioId === AppState.filtros.espacioSeleccionado &&
+          r.fecha === AppState.filtros.fechaSeleccionada &&
+          r.horaInicio === hora &&
+          r.estado === 'bloqueado'
+        );
+        if (rsv) desbloquearHorarioMantenimiento(rsv.id);
+      }
+      actualizarDatos();
+      iniciarPolling();
+      mostrarToast(`✨ Horario ${hora} desbloqueado y disponible.`);
+      return;
+    }
+    if (estado === 'ocupado' || estado === 'pendiente') {
+      return abrirModalGestion(hora);
+    }
+    return;
+  }
+
+  // Modo Vecino
+  if (estado === 'disponible') {
+    return abrirModalReserva(hora);
+  }
+  if (estado === 'ocupado' || estado === 'pendiente') {
+    return abrirModalGestion(hora);
+  }
+  if (estado === 'bloqueado') {
+    mostrarToast('🛠️ Horario bloqueado por mantenimiento.');
+  }
 };
 
 document.getElementById('cuadricula-container').addEventListener('click', manejarSeleccionSlot);
@@ -592,6 +692,12 @@ document.getElementById('reglamento-acordeon').addEventListener('click', e => {
   const btn = e.target.closest('.acordeon-header');
   if (btn?.dataset.seccion) alternarSeccionReglamento(btn.dataset.seccion);
 });
+
+/* ─── HU-09: Listener de Modo Administrador ─── */
+const btnModoAdminEl = document.getElementById('btn-modo-admin');
+if (btnModoAdminEl) {
+  btnModoAdminEl.addEventListener('click', alternarModoAdmin);
+}
 
 // HU-02: Envío y validación del formulario de reserva
 document.getElementById('form-reserva').addEventListener('submit', e => {

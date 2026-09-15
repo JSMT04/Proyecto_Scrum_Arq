@@ -110,6 +110,34 @@ const actualizarEstadoReserva = (id, nuevoEstado) => {
   }
 };
 
+/* HU-09: Bloqueo y Desbloqueo por Mantenimiento */
+const bloquearHorarioMantenimiento = (espacioId, fecha, horaInicio, horaFin) => {
+  const nuevoBloqueo = {
+    id: `mtn-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    espacioId,
+    fecha,
+    horaInicio,
+    horaFin,
+    estado: 'bloqueado',
+    vecinoId: 'admin',
+    nombreVecino: 'Administración (Mantenimiento)',
+    datosContacto: { nombre: 'Administración', telefono: '0000000000' }
+  };
+  RESERVAS.push(nuevoBloqueo);
+  guardarReservasStorage(RESERVAS);
+  return nuevoBloqueo;
+};
+
+const desbloquearHorarioMantenimiento = id => {
+  const index = RESERVAS.findIndex(r => r.id === id);
+  if (index !== -1) {
+    const [eliminado] = RESERVAS.splice(index, 1);
+    guardarReservasStorage(RESERVAS);
+    return eliminado;
+  }
+  return null;
+};
+
 /* HU-08: Reglamento de uso de instalaciones */
 const REGLAMENTO = [
   {

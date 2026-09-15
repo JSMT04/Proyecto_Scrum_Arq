@@ -28,7 +28,9 @@ const calcularDisponibilidad = (espacioId, fechaISO, reservas) => {
   return generarBloques().map(bloque => {
     const solapadas = activas.filter(r => seSuperponen(r, bloque.hora));
     if (!solapadas.length) return bloque;
-    // Prioridad: confirmada > pendiente
+    // Prioridad: bloqueado > confirmada > pendiente
+    const bloqueada = solapadas.find(r => r.estado === 'bloqueado');
+    if (bloqueada) return { ...bloque, estado: 'bloqueado', reservaId: bloqueada.id };
     const confirmada = solapadas.find(r => r.estado === 'confirmada');
     return confirmada
       ? { ...bloque, estado: 'ocupado',   reservaId: confirmada.id }
