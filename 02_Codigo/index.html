@@ -21,6 +21,9 @@
         </div>
       </div>
       <div class="header-right">
+        <button id="btn-reglamento" class="btn-historial" aria-label="Consultar reglamento de uso">
+          📜 Reglamento
+        </button>
         <button id="btn-mis-reservas" class="btn-historial" aria-label="Ver mis reservas">
           📋 Mis Reservas
         </button>
@@ -124,6 +127,20 @@
         <span class="historial-vacio-icon" aria-hidden="true">📭</span>
         <p>No se encontraron reservas para este número.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Reglamento de Uso (HU-08) -->
+  <div id="reglamento-overlay" class="reglamento-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reglamento-title">
+    <div class="reglamento-panel">
+      <div class="reglamento-header">
+        <div>
+          <h2 id="reglamento-title" class="reglamento-title">📜 Reglamento de Uso</h2>
+          <p class="reglamento-subtitle">Normas comunitarias para la convivencia y uso responsable de las instalaciones</p>
+        </div>
+        <button id="btn-reglamento-close" class="modal-close-btn" aria-label="Cerrar reglamento">&#x2715;</button>
+      </div>
+      <div id="reglamento-acordeon" class="reglamento-acordeon" role="region" aria-label="Secciones del reglamento"></div>
     </div>
   </div>
 

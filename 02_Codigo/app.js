@@ -22,7 +22,8 @@ const AppState = {
     modalReserva: { abierto: false, bloqueSeleccionado: null },
     modalGestion: { abierto: false, reservaId: null, horaSeleccionada: null },
     modalComprobante: { abierto: false, reserva: null },
-    historial: { abierto: false, telefonoBusqueda: '' }
+    historial: { abierto: false, telefonoBusqueda: '' },
+    reglamento: { abierto: false, seccionActiva: 'general' }
   }
 };
 
@@ -284,6 +285,67 @@ const cerrarHistorial = () => {
   AppState.ui.historial.abierto = false;
 };
 
+/* ─── HU-08: Visualización y navegación del Reglamento ─── */
+const renderReglamento = () => {
+  const container = document.getElementById('reglamento-acordeon');
+  if (!container || typeof REGLAMENTO === 'undefined') return;
+
+  container.innerHTML = REGLAMENTO.map(sec => {
+    const esActiva = sec.id === AppState.ui.reglamento.seccionActiva;
+    return `
+      <article class="acordeon-item ${esActiva ? 'abierto' : ''}" id="acordeon-${sec.id}">
+        <button
+          type="button"
+          class="acordeon-header"
+          data-seccion="${sec.id}"
+          aria-expanded="${esActiva}"
+          aria-controls="contenido-${sec.id}"
+          id="btn-acordeon-${sec.id}"
+        >
+          <span class="acordeon-titulo">${sec.titulo}</span>
+          <span class="acordeon-chevron" aria-hidden="true">&#9660;</span>
+        </button>
+        <div
+          id="contenido-${sec.id}"
+          class="acordeon-body"
+          role="region"
+          aria-labelledby="btn-acordeon-${sec.id}"
+        >
+          <ul class="acordeon-lista">
+            ${sec.normas.map(norma => `<li>${norma}</li>`).join('')}
+          </ul>
+        </div>
+      </article>
+    `;
+  }).join('');
+};
+
+const alternarSeccionReglamento = seccionId => {
+  AppState.ui.reglamento.seccionActiva = AppState.ui.reglamento.seccionActiva === seccionId ? null : seccionId;
+  const items = document.querySelectorAll('.acordeon-item');
+  items.forEach(item => {
+    const btn = item.querySelector('.acordeon-header');
+    const id = btn?.dataset.seccion;
+    const esActiva = id === AppState.ui.reglamento.seccionActiva;
+    item.classList.toggle('abierto', esActiva);
+    if (btn) btn.setAttribute('aria-expanded', String(esActiva));
+  });
+};
+
+const abrirReglamento = () => {
+  AppState.ui.reglamento.abierto = true;
+  AppState.ui.reglamento.seccionActiva = 'general';
+  renderReglamento();
+  document.getElementById('reglamento-overlay').classList.remove('hidden');
+  const btnClose = document.getElementById('btn-reglamento-close');
+  if (btnClose) btnClose.focus();
+};
+
+const cerrarReglamento = () => {
+  AppState.ui.reglamento.abierto = false;
+  document.getElementById('reglamento-overlay').classList.add('hidden');
+};
+
 /* ─── Polling automático ─── */
 let pollingId = null;
 
@@ -505,6 +567,7 @@ window.addEventListener('keydown', e => {
     if (AppState.ui.modalGestion.abierto) cerrarModalGestion();
     if (AppState.ui.modalComprobante.abierto) cerrarModalComprobante();
     if (AppState.ui.historial.abierto) cerrarHistorial();
+    if (AppState.ui.reglamento.abierto) cerrarReglamento();
   }
 });
 
@@ -517,6 +580,17 @@ document.getElementById('historial-overlay').addEventListener('click', e => {
 document.getElementById('btn-buscar-historial').addEventListener('click', buscarHistorial);
 document.getElementById('input-tel-historial').addEventListener('keydown', e => {
   if (e.key === 'Enter') buscarHistorial();
+});
+
+/* ─── HU-08: Listeners del Reglamento ─── */
+document.getElementById('btn-reglamento').addEventListener('click', abrirReglamento);
+document.getElementById('btn-reglamento-close').addEventListener('click', cerrarReglamento);
+document.getElementById('reglamento-overlay').addEventListener('click', e => {
+  if (e.target.id === 'reglamento-overlay') cerrarReglamento();
+});
+document.getElementById('reglamento-acordeon').addEventListener('click', e => {
+  const btn = e.target.closest('.acordeon-header');
+  if (btn?.dataset.seccion) alternarSeccionReglamento(btn.dataset.seccion);
 });
 
 // HU-02: Envío y validación del formulario de reserva

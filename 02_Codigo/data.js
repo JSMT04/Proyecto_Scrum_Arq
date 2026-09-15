@@ -109,3 +109,62 @@ const actualizarEstadoReserva = (id, nuevoEstado) => {
     guardarReservasStorage(RESERVAS);
   }
 };
+
+/* HU-08: Reglamento de uso de instalaciones */
+const REGLAMENTO = [
+  {
+    id: "general",
+    titulo: "📋 Normas Generales",
+    normas: [
+      "Las instalaciones son de uso exclusivo para vecinos registrados del barrio.",
+      "El uso de los espacios requiere reserva previa a través del sistema.",
+      "Se debe respetar el horario reservado. El incumplimiento puede dar lugar a sanciones.",
+      "No se permite el ingreso de personas en estado de embriaguez o bajo sustancias.",
+      "El vecino responsable de la reserva es responsable del cuidado del espacio."
+    ]
+  },
+  {
+    id: "salon_comunal",
+    titulo: "🏛️ Normas — Salón Comunal",
+    normas: [
+      "Capacidad máxima permitida: 60 personas (75% del aforo total).",
+      "El uso de equipos de sonido debe cesar a las 22:00 horas.",
+      "El salón debe entregarse limpio y en orden al finalizar el evento.",
+      "No se permite el uso de velas, bengalas u objetos de fuego.",
+      "La decoración no debe dañar paredes, techos ni mobiliario."
+    ]
+  },
+  {
+    id: "cancha",
+    titulo: "⚽ Normas — Cancha Polideportiva",
+    normas: [
+      "El uso de la cancha requiere calzado deportivo adecuado.",
+      "Está prohibido ingresar alimentos o bebidas a la cancha.",
+      "La iluminación nocturna se apagará automáticamente a las 22:00 horas.",
+      "No se permite el uso de la cancha para actividades distintas al deporte.",
+      "Los implementos deportivos deben ser devueltos al finalizar la reserva."
+    ]
+  },
+  {
+    id: "sala_juntas",
+    titulo: "📋 Normas — Sala de Juntas",
+    normas: [
+      "Capacidad máxima: 20 personas sentadas.",
+      "El espacio es exclusivo para reuniones, comités y juntas de vecinos.",
+      "El uso del proyector y pizarrón debe ser solicitado con anticipación.",
+      "No se permiten eventos de carácter festivo o social en este espacio.",
+      "Dejar el espacio ordenado y con el equipo apagado al finalizar."
+    ]
+  },
+  {
+    id: "sanciones",
+    titulo: "⚠️ Sanciones por Incumplimiento",
+    normas: [
+      "El incumplimiento reiterado resultará en suspensión temporal del derecho a reserva.",
+      "Los daños materiales causados serán responsabilidad del vecino que realizó la reserva.",
+      "Las reservas no utilizadas sin cancelación previa contarán como falta.",
+      "Tres faltas acumuladas en un semestre implican la inhabilitación por 30 días."
+    ]
+  }
+];
+
